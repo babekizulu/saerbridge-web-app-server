@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS security_audit_events;
+DROP TABLE IF EXISTS data_rights_requests;
+DROP TABLE IF EXISTS legal_acceptances;
+DROP TABLE IF EXISTS legal_documents;
+DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS user_preferences;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS schema_migrations;

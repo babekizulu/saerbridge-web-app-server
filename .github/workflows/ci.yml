@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: saerbridge
+          POSTGRES_PASSWORD: saerbridge_test
+          POSTGRES_DB: saerbridge_test
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U saerbridge -d saerbridge_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://saerbridge:saerbridge_test@localhost:5434/saerbridge_test
+      SESSION_SECRET: test-session-secret-which-is-at-least-32-chars
+      CSRF_SECRET: test-csrf-secret-which-is-at-least-32-chars-xx
+      GOOGLE_CLIENT_ID: test-google-client-id.apps.googleusercontent.com
+      CLIENT_ORIGINS: http://localhost:5173
+      ADMIN_EMAILS: admin@example.com
+      OPENAI_ENABLED: "false"
+      ENABLE_TEST_AUTH: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm audit --audit-level=high

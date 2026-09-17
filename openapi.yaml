@@ -1,0 +1,158 @@
+openapi: 3.1.0
+info:
+  title: Saerbridge Central API
+  version: 1.0.0
+  description: |
+    Cookie-authenticated API for saerbridge.com. Production host is https://api.saerbridge.com.
+    Send credentials. State-changing methods require header X-CSRF-Token from GET /api/v1/auth/session.
+  contact:
+    email: we@saerbridge.com
+servers:
+  - url: https://api.saerbridge.com
+  - url: http://localhost:8080
+paths:
+  /healthz:
+    get:
+      summary: Process health
+      responses:
+        '200':
+          description: OK
+  /readyz:
+    get:
+      summary: Database readiness
+      responses:
+        '200':
+          description: Ready
+        '500':
+          description: Database not reachable
+  /api/v1/auth/session:
+    get:
+      summary: Current session, CSRF token and Google nonce
+      responses:
+        '200':
+          description: Session payload
+  /api/v1/auth/google:
+    post:
+      summary: Verify a Google ID token and establish a session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [credential]
+              properties:
+                credential: { type: string }
+      responses:
+        '200': { description: Authenticated session }
+        '401': { description: Unverified credential }
+        '403': { description: CSRF or origin }
+  /api/v1/auth/logout:
+    post:
+      summary: Destroy the server session
+      responses:
+        '200': { description: Signed out }
+  /api/v1/products:
+    get:
+      summary: Public product registry
+      responses:
+        '200': { description: Product list }
+  /api/v1/products/{slug}:
+    get:
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Product }
+        '404': { description: Not found }
+  /api/v1/me:
+    get:
+      summary: Current user
+      responses:
+        '200': { description: User }
+        '401': { description: Unauthenticated }
+    patch:
+      summary: Update allowed profile fields
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [displayName]
+              properties:
+                displayName: { type: string, maxLength: 120 }
+      responses:
+        '200': { description: Updated user }
+        '422': { description: Validation }
+    delete:
+      summary: Delete and anonymise the account
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [confirmation]
+              properties:
+                confirmation: { type: string, enum: [DELETE] }
+      responses:
+        '204': { description: Deleted }
+  /api/v1/me/export:
+    get:
+      summary: JSON export of core account data
+      responses:
+        '200': { description: Export }
+  /api/v1/me/preferences:
+    get:
+      responses:
+        '200': { description: Preferences }
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [locale, reduceMotion, theme]
+              properties:
+                locale: { type: string }
+                reduceMotion: { type: boolean }
+                theme: { type: string, enum: [system, paper, ink] }
+      responses:
+        '200': { description: Saved }
+  /api/v1/data-rights-requests:
+    post:
+      responses:
+        '201': { description: Created }
+  /api/v1/data-rights-requests/mine:
+    get:
+      responses:
+        '200': { description: List }
+  /api/v1/admin/products:
+    get:
+      responses:
+        '200': { description: Admin list }
+    post:
+      responses:
+        '201': { description: Created }
+        '403': { description: Not admin }
+  /api/v1/ai/complete:
+    post:
+      summary: Optional authenticated AI completion
+      responses:
+        '200': { description: Labelled generated text }
+        '502': { description: Provider error }
+        '503': { description: Disabled }
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: __Secure-saerbridge.sid
+  headers:
+    RateLimit:
+      description: Standard rate-limit headers are emitted. Auth, AI, admin and DELETE /me are tighter than the global limiter.

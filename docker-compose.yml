@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: saerbridge-db
+    environment:
+      POSTGRES_USER: saerbridge
+      POSTGRES_PASSWORD: saerbridge_dev
+      POSTGRES_DB: saerbridge
+    ports:
+      - "5433:5432"
+    volumes:
+      - saerbridge_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saerbridge -d saerbridge"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  db_test:
+    image: postgres:16-alpine
+    container_name: saerbridge-db-test
+    environment:
+      POSTGRES_USER: saerbridge
+      POSTGRES_PASSWORD: saerbridge_test
+      POSTGRES_DB: saerbridge_test
+    ports:
+      - "5434:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saerbridge -d saerbridge_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  saerbridge_pg:
