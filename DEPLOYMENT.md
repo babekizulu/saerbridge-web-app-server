@@ -35,13 +35,27 @@ Set at least:
 
 Optional legal fields: `COMPANY_REGISTRATION_NUMBER`, `INFORMATION_OFFICER_NAME`, `INFORMATION_OFFICER_EMAIL`, `INFORMATION_OFFICER_PHONE`, `REGISTERED_ADDRESS`. Leave blank rather than inventing values.
 
+## Railway service settings
+
+Connect this repository at its root on branch `main`. Use Railpack, start command
+`npm start`, pre-deploy command `npm run release`, and health check `/readyz`.
+The release command applies migrations and inserts missing catalogue/legal rows
+without overwriting administrator edits. Set `ENABLE_TEST_AUTH=false` and
+`NODE_ENV=production` explicitly.
+
+New Railway services no longer opt into the legacy `railway.json` configuration
+as of August 28, 2026. Verify these settings in the service dashboard.
+
+For the main website, begin with
+`CLIENT_ORIGINS=https://saerbridge.com,https://www.saerbridge.com`.
+Add a product origin only when that product is ready to integrate.
+
 ## Release commands
 
-After first deploy, run:
+For a manual first deployment, run:
 
 ```
-npm run migrate
-npm run seed
+npm run release
 ```
 
 Configure a Railway cron or scheduled job:
@@ -50,7 +64,7 @@ Configure a Railway cron or scheduled job:
 npm run maintenance
 ```
 
-Health check path: `/healthz`.
+Readiness check path: `/readyz` (includes database connectivity). Process health: `/healthz`.
 
 ## Proxy
 

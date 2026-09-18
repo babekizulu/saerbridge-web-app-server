@@ -28,17 +28,8 @@ function applyTestEnv() {
 
 let app;
 let pool;
-let skipReason = null;
 
-function apiTest(name, fn) {
-  test(name, async (t) => {
-    if (skipReason) {
-      t.skip(skipReason);
-      return;
-    }
-    return fn();
-  });
-}
+const apiTest = test;
 
 async function sessionAgent() {
   const agent = request.agent(app);
@@ -61,13 +52,8 @@ async function login(email = "member@example.com", googleSub = "google-sub-membe
 
 before(async () => {
   applyTestEnv();
-  try {
-    await migrateUp(process.env.DATABASE_URL);
-    await seed(process.env.DATABASE_URL);
-  } catch (error) {
-    skipReason = `PostgreSQL unavailable: ${error.code || error.message || error}`;
-    return;
-  }
+  await migrateUp(process.env.DATABASE_URL);
+  await seed(process.env.DATABASE_URL);
   const created = createApp({
     config: loadEnv(),
     googleAuth: {
@@ -177,7 +163,7 @@ apiTest("account update, export, preferences and deletion", async () => {
   const prefs = await agent
     .put("/api/v1/me/preferences")
     .set("Origin", ORIGIN)
-    .set("X-CSRF-Token", patch.body.meta ? csrfToken : csrfToken)
+    .set("X-CSRF-Token", csrfToken)
     .send({ locale: "ar", reduceMotion: true, theme: "paper" });
   assert.equal(prefs.status, 200);
   assert.equal(prefs.body.data.locale, "ar");
@@ -289,4 +275,16 @@ apiTest("does not disclose whether arbitrary emails exist", async () => {
     .send({ credential: "bad-credential-that-fails-google-verification" });
   assert.ok([401, 403].includes(response.status));
   assert.ok(!String(response.body.error?.message || "").toLowerCase().includes("exists"));
+});
+
+apiTest("release seeding preserves changes to existing products", async () => {
+  const before = await pool.query("SELECT short_description FROM products WHERE slug = 'nile'");
+  try {
+    await pool.query("UPDATE products SET short_description = $1 WHERE slug = 'nile'", ["Administrator content"]);
+    await seed(process.env.DATABASE_URL, { missingOnly: true });
+    const after = await pool.query("SELECT short_description FROM products WHERE slug = 'nile'");
+    assert.equal(after.rows[0].short_description, "Administrator content");
+  } finally {
+    await pool.query("UPDATE products SET short_description = $1 WHERE slug = 'nile'", [before.rows[0].short_description]);
+  }
 });

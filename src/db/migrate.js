@@ -30,8 +30,9 @@ async function listUpMigrations() {
 async function migrateUp(databaseUrl = process.env.DATABASE_URL) {
   if (!databaseUrl) throw new Error("DATABASE_URL is required to run migrations");
   const pool = createPool(databaseUrl);
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
     await ensureMigrationsTable(client);
     const applied = new Set(await appliedMigrations(client));
     const files = await listUpMigrations();
@@ -52,7 +53,7 @@ async function migrateUp(databaseUrl = process.env.DATABASE_URL) {
     }
     return ran;
   } finally {
-    client.release();
+    client?.release();
     await closePool(pool);
   }
 }
@@ -60,8 +61,9 @@ async function migrateUp(databaseUrl = process.env.DATABASE_URL) {
 async function migrateDown(databaseUrl = process.env.DATABASE_URL) {
   if (!databaseUrl) throw new Error("DATABASE_URL is required to roll back migrations");
   const pool = createPool(databaseUrl);
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
     await ensureMigrationsTable(client);
     const applied = await appliedMigrations(client);
     const latest = applied.at(-1);
@@ -80,7 +82,7 @@ async function migrateDown(databaseUrl = process.env.DATABASE_URL) {
     }
     return [latest];
   } finally {
-    client.release();
+    client?.release();
     await closePool(pool);
   }
 }

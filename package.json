@@ -18,7 +18,9 @@
     "migrate": "node src/db/migrate.js up",
     "migrate:rollback": "node src/db/migrate.js down",
     "seed": "node src/db/seed.js",
-    "maintenance": "node src/maintenance.js"
+    "maintenance": "node src/maintenance.js",
+    "seed:missing": "node src/db/seed.js --missing-only",
+    "release": "npm run migrate && npm run seed:missing"
   },
   "dependencies": {
     "compression": "^1.8.1",
